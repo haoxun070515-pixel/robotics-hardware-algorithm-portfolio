@@ -1,0 +1,299 @@
+\documentclass[12pt,a4paper,UTF8]{ctexart}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{caption}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+\geometry{left=25mm,right=25mm,top=25mm,bottom=25mm}
+\pagestyle{fancy}
+\fancyhf{}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\title{\textbf{\zihao{3} 无线电干扰源的快速自动定位与清除}\\[2mm]
+\zihao{4} ——交会定位区域的多边形直径算法与最小外接圆覆盖判据}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\zihao{-4}
+本文研究了移动机器狗搭载测向仪对未知无线电干扰源实施全自主搜索、协同交会定位与激光清除的系统性建模与优化问题。针对方位角测向误差（$\pm 1^\circ$）、接收半径截断（$1000\sim 1500\text{ m}$）以及光学/激光清除物理判据（清除半径 $R_0 = 20\text{ m}$），综合运用\textbf{凸多边形半平面交、旋转卡壳直径算法、最小外接圆覆盖判据、最坏情形（Min-Max）两站几何极值分析、Voronoi 全域覆盖完备性证明、旅行商问题（TSP）最近邻与 2-opt 路径优化、定向辐射可见性凸包充要条件}等方法，逐层推进求解四类渐进式问题。
+
+\textbf{针对问题一（定位区域几何判据与直径算法）}：建立由测向误差角界构成的半平面约束系统，证明多站交会定位区域必为顶点数 $n_V \le 2k$ 的凸多边形，并给出区域有界性的充要代数判据。利用凸集泛函极值必在顶点取得的性质，设计 $O(n_V^2)$ 顶点枚举与 $O(n_V)$ 旋转卡壳双法互校算法求解区域直径 $D$。证明了“以直径对为直径的圆覆盖区域”可由泰勒斯定理给出点积快速判定，但仅为充分非必要条件；进一步推导并确立以\textbf{凸多边形最小外接圆半径 $R_{\text{mec}} \le 20\text{ m}$} 作为机器狗激光一次性清除的充要动作判据，动作点即外接圆圆心，给出了 Jung 定理偏差界。建立等距环多测点布局设计律 $R_{\text{mec}} \approx c_k d \tan\Delta$，阐明测点空间布局优于盲目增加测点数。
+
+\textbf{针对问题二（第二检测点最坏情形选址优化）}：基于最坏情形准则，建立双层 Min-Max 评价函数 $J(r, \psi) = \max_{d_1, \varepsilon} D$。解析证明在源距已知时，两站等距正交交会下区域直径仅取决于基线长度 $D = b\tan 2\Delta$，推导出临界基线 $b^* = 1145.45\text{ m}$ 与等距正交临界源距 $T^* = 809.96\text{ m}$。面对源距未知的现实挑战，采用三趟网格加密枚举算法（粗网格 $50\text{m}/5^\circ \to$ 细化 $10\text{m}/1^\circ \to$ 精化 $5\text{m}/0.5^\circ$），求得最坏情形下的最小最大直径为 $81.48\text{ m}$（对应最优测点 $S_2^* = (1154.7, 1003.8)\text{ m}$，基线 $r^* = 1530\text{ m}$，方位 $\psi^* = 41.0^\circ$）。证明了单个固定第二检测点在源距未知时理论上无法保证一次清除，从而确立了必须使检测点移动、进行“多轮自适应重测”的必要性依据。
+
+\textbf{针对问题三（全向干扰源多站巡检与清除策略）}：确立“普查—探测—清除—兜底”四阶段自主作业流程。以统一虚拟时间代价函数贯穿全流程，基于接收半径下界 $1000\text{ m}$ 反解出 $R=1800\text{ m}$ 圆域内“原点 + 半径 $950\text{ m}$ 环上 9 点”（共 10 个站点）的最优布点方案，严格证明最坏覆盖距离 $\rho_1 = 963.7\text{ m} < 1000\text{ m}$，生成首轮普查零漏检证书。设计“2a快速盲走横移 $\to$ 2b反转横移复测 $\to$ 末端射线二分逼近”三级降级链；采用最近邻构造结合 2-opt 局部搜索优化巡游路径。在官方模拟器三次正式测试中，\textbf{干扰源清除率均达 100\%}，平均单源定位清除时间分别为 $380.99\text{ s}$、$405.69\text{ s}$ 和 $289.92\text{ s}$。
+
+\textbf{针对问题四（定向干扰源可见性与外圈补盲协同策略）}：引入定向辐射半平面覆盖模型，利用凸集分离定理证明：\textbf{任意朝向定向源保底被检出的充要条件是干扰源落在可见站点集的凸包内}。指出域内布点在边界必然产生朝外漏检缺陷，推导外圈补盲站点的半径与点数相容区间，增设 14 个域外补盲站点（半径 $1860\text{ m}$）使保底检出率提升至 100\%。建立基于覆盖凸性的沿示向度射线二分逼近算法，升级最小外接圆为“必命中”判据。在官方模拟器三次正式测试中，\textbf{干扰源清除率再次达到 100\%}。
+
+\vspace{3mm}
+\noindent \textbf{关键词}：移动机器人；半平面交；旋转卡壳；最小外接圆；覆盖完备性；凸包可见性；旅行商问题（2-opt）；状态机调度
+\end{abstract}
+
+\newpage
+\setcounter{page}{1}
+
+\section{问题背景与问题重述}
+\subsection{问题背景}
+无线电干扰源的排查与清除是维护现代电磁空间安全的核心任务。传统排查流程由固定监测站进行初步大范围监测、移动监测车进行区域性排查，最后由技术人员携带便携式测向设备进入复杂危险区域徒步精准排查。为提高作业安全性与处置效率，研发搭载于四足机器狗的自主电磁干扰源排查与激光清除系统具有重大战略与应用价值。本任务的核心，在于将人工定性研判经验转化为可计算、高鲁棒的数学几何模型与全自主决策算法。
+
+\subsection{题目关键信息与约束条件}
+\begin{enumerate}
+    \item \textbf{作业区域}：以圆心为坐标原点，半径 $R = 1800\text{ m}$ 的二维水平圆形区域。正东方向为 $x$ 轴正向，正北方向为 $y$ 轴正向。
+    \item \textbf{测向机性能与误差}：机器狗测向机测得的最大场强方向称为示向度。由于多径效应与环境噪声，示向度读数与真实方位角之差服从全局误差界 $\Delta = \pm 1^\circ$。
+    \item \textbf{有效探测与接收半径}：每个干扰源在某一频点工作，其有效接收半径 $R_G$ 落在 $[1000, 1500]\text{ m}$ 区间内（每源固定但未知）。当检测点到源的距离超过 $R_G$ 时无法获得信号；当距离不超过 $5\text{ m}$ 时，因信号超载无法获得示向度读数，此时触发近场光学直接清除。
+    \item \textbf{定位与激光清除判据}：机器狗搭载的光学/激光探测仪有效清除半径为 $R_0 = 20\text{ m}$。只要机器狗移动至目标点，且真源位于以该点为圆心、半径 $R_0 = 20\text{ m}$ 的闭圆盘内，即可成功启动激光将其清除。
+    \item \textbf{运动学与时间计量}：机器狗匀速直线移动速度 $v = 5\text{ m/s}$；在测点停下切换信道、转动天线并读取示向度耗时 $5\text{ s}$；任意两频段切换耗时 $1\text{ s}$；光学精确定位耗时 $3\text{ s}$，激光发射清除耗时 $2\text{ s}$。
+\end{enumerate}
+
+\section{主要符号说明}
+\begin{table}[htbp]
+\centering
+\caption{全文核心数学与物理符号说明}
+\begin{tabular}{clc}
+\toprule
+\textbf{符号} & \textbf{物理与数学含义} & \textbf{国际单位} \\
+\midrule
+$k$ & 对同一干扰源实施测向的有效检测点总数 & 个 \\
+$S_i = (x_i, y_i)$ & 第 $i$ 个检测点的二维笛卡尔坐标 & $\text{m}$ \\
+$\theta_i$ & 第 $i$ 个检测点测得的示向度方位角 & $^\circ$ \\
+$\Delta$ & 示向度读数的最大物理误差半角（$\Delta = 1.0^\circ$） & $^\circ$ \\
+$W_i$ & 第 $i$ 个检测点示向度对应的角宽 $2\Delta$ 的楔形闭半平面交集 & — \\
+$\mathcal{R}, \mathcal{V}$ & 凸多边形交会定位区域及其顶点集合 & — \\
+$n_V$ & 凸多边形交会区域的实际顶点数（$n_V \le 2k$） & 个 \\
+$D$ & 凸多边形定位区域的几何直径（最远顶点间距） & $\text{m}$ \\
+$R_0$ & 光学探测仪与激光清除的有效物理半径（$R_0 = 20\text{ m}$） & $\text{m}$ \\
+$R_{\text{mec}}$ & 定位区域 $\mathcal{R}$ 的最小外接圆半径（Minimum Enclosing Circle） & $\text{m}$ \\
+$c^*$ & 定位区域最小外接圆圆心（机器狗清除动作点） & $\text{m}$ \\
+$b, b^*$ & 两检测点之间的基线长度及其正交临界值（$b^* = 1145.45\text{ m}$） & $\text{m}$ \\
+$T^*$ & 两站等距正交构型下的适用源距上界（$T^* = 809.96\text{ m}$） & $\text{m}$ \\
+$J(r, \psi)$ & 最坏情形准则下的双层极值目标评价函数 & $\text{m}$ \\
+$\rho_1, \rho_2$ & 全域任意点到最近、次近检测站点的最大欧氏距离 & $\text{m}$ \\
+$v$ & 机器狗匀速直线行走速度（$v = 5\text{ m/s}$） & $\text{m/s}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{问题一：多边形直径算法与最小外接圆覆盖判据}
+\subsection{定位区域的半平面交表示}
+第 $i$ 个测点 $S_i$ 处测得示向度 $\theta_i$，误差界为 $\Delta = 1^\circ$。真实源位置 $X$ 必落在射线方向夹角为 $2\Delta$ 的楔形区域内：
+\begin{equation}
+W_i = \left\{ X \in \mathbb{R}^2 \;\middle|\; \left|\operatorname{arg}(X - S_i) - \theta_i\right| \le \Delta \right\}
+\end{equation}
+该楔形等价于两个闭半平面的交：
+\begin{equation}
+\mathbf{n}_i^\pm \cdot (X - S_i) \ge 0, \quad \mathbf{n}_i^\pm = \mathbf{u}(\theta_i \mp \Delta \pm 90^\circ)
+\end{equation}
+$k$ 个测站联合观测的交会定位区域为：
+\begin{equation}
+\mathcal{R} = \bigcap_{i=1}^k W_i = \left\{ X \in \mathbb{R}^2 \;\middle|\; \mathbf{n}_i^\pm \cdot (X - S_i) \ge 0,\ i=1,\dots,k \right\}
+\end{equation}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig1_tech_route_q1.png}
+\caption{问题一求解的技术路线（示意图）}
+\end{figure}
+
+\subsection{直径计算算法（顶点枚举与旋转卡壳）}
+区域直径定义为欧氏空间最大两点距离 $D = \max_{P, Q \in \mathcal{R}} \|P - Q\|$。由于距离函数是凸函数，极大值必在顶点集 $\mathcal{V} = \{P_1, \dots, P_{n_V}\}$ 取得：
+\begin{equation}
+D = \max_{1 \le i < j \le n_V} \|P_i - P_j\|
+\end{equation}
+
+\subsection{激光清除的充要判据：最小外接圆}
+\begin{equation}
+R_{\text{mec}}(\mathcal{R}) = \min_{c \in \mathbb{R}^2} \max_{X \in \mathcal{R}} \|X - c\| \le R_0 = 20\text{ m}
+\end{equation}
+以直径对 $(A, B)$ 构成中点 $C = (A+B)/2$、半径 $\rho = D/2$ 的圆盘 $\Omega$。由泰勒斯定理，顶点 $P$ 落在圆内的充要条件是张角 $\angle APB \ge 90^\circ$，其点积判据为：
+\begin{equation}
+s_P = (A - P) \cdot (B - P) \le 0
+\end{equation}
+由 Jung 定理给出两判据偏差界：
+\begin{equation}
+\frac{D}{2} \le R_{\text{mec}} \le \frac{D}{\sqrt{3}} \approx 1.1547 \times \frac{D}{2}
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\caption{布局设计律：$R_{\text{mec}} \approx c_k d \tan\Delta$ 与达标站距 $d_{\max}$（$\Delta = 1^\circ, d = 1000\text{ m}$）}
+\begin{tabular}{lccc}
+\toprule
+\textbf{布局形式} & \textbf{测点数 $k$} & \textbf{布局常数 $c_k$} & \textbf{达标站距上界 $d_{\max}\ (\text{m})$} \\
+\midrule
+正交等距（四边形） & 2 & 1.4146 & 809.96 \\
+均匀环绕 $120^\circ$ & 3 & 1.1665 & 982.3 \\
+最优扇形（间隔 $60.5^\circ$） & 3 & 1.1585 & 989.1 \\
+均匀环绕 $90^\circ$（含两对对径） & 4 & 1.3899 & 824.3 \\
+最优扇形（间隔 $45.5^\circ$） & 4 & 1.0842 & 1056.8 \\
+均匀环绕 $72^\circ$ & 5 & 1.0575 & 1083.5 \\
+最优扇形（间隔 $36.5^\circ$） & 5 & 1.0528 & 1088.3 \\
+均匀环绕 $60^\circ$（含三对对径） & 6 & 1.1432 & 1002.3 \\
+最优扇形（间隔 $30.5^\circ$） & 6 & 1.0363 & 1105.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig2_cross_angle_vs_diameter.png}
+\caption{四边形族的直径与最小外接圆随交会角的变化}
+\end{figure}
+
+\section{问题二：第二检测点的最坏情形选址优化}
+\subsection{Min-Max 优化准则}
+\begin{equation}
+\min_{r, \psi} J(r, \psi), \quad J(r, \psi) = \max_{d_1 \in [5, 1500],\, \varepsilon_1, \varepsilon_2 \in [-\Delta, +\Delta]} D(r, \psi;\, d_1, \varepsilon_1, \varepsilon_2)
+\end{equation}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig3_tech_route_q2.png}
+\caption{问题二求解的技术路线（示意图）}
+\end{figure}
+
+两站等距正交交会下区域直径满足闭式解：
+\begin{equation}
+D = b \tan 2\Delta \implies b^* = \frac{40}{\tan 2^\circ} = 1145.45\text{ m}, \quad T^* = \frac{b^*}{\sqrt{2}} = 809.96\text{ m}
+\end{equation}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig4_orthogonal_intersection.png}
+\caption{正交交会局部放大与等距族曲线}
+\end{figure}
+
+三趟网格加密枚举求得最优解为 $J^* = 81.483\text{ m}$，最优位置 $S_2^* = (1154.7, 1003.8)\text{ m}$（基线 $r^* = 1530\text{ m}$，方位 $\psi^* = 41.0^\circ$）。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig5_s2_candidate_regions.png}
+\caption{第二检测点的较好位置集（三个视图）}
+\end{figure}
+
+在最优选区附近，对误差界 $\Delta$ 进行敏感性测试：
+\begin{itemize}
+    \item 当 $\Delta = 0.9^\circ$ 时：最坏情形直径下降为 $J = 73.325\text{ m}$，相对基准变化 $-10.01\%$；
+    \item 当 $\Delta = 1.1^\circ$ 时：最坏情形直径上升为 $J = 89.646\text{ m}$，相对基准变化 $+10.02\%$。
+\end{itemize}
+由于最坏直径 $81.48\text{ m} > 40\text{ m}$，证明单靠单个固定第二点无法保证一次清除，必须让机器狗动态移动复测。
+
+\section{问题三：多全向干扰源全局自动定位与清除}
+统一虚拟时间代价函数为：
+\begin{equation}
+T = \sum_k \frac{\|X_{k+1} - X_k\|}{v} + 5 N_{\text{测}} + N_{\text{切}} + 5 N_{\text{中}} + 3 N_{\text{未}}
+\end{equation}
+
+在 $R=1800\text{ m}$ 圆域内布设“原点 + 半径 $950\text{ m}$ 环上 9 点”（共 10 站），最坏覆盖距离：
+\begin{equation}
+\rho_1 = \sqrt{r^2 + R^2 - 2rR\cos\frac{\pi}{n}} = 963.7\text{ m} < R_G^{\min} = 1000\text{ m}
+\end{equation}
+证明首轮普查零漏检。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig7_probe_actions_2a_2b.png}
+\caption{换点复测动作（2a 盲走横移、锚点工况与 2b 示向度反转）}
+\end{figure}
+
+在官方模拟器三次盲测中，清除率达到 100\%：
+\begin{table}[htbp]
+\centering
+\caption{问题三官方模拟器正式测试结果}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{测试案例编码} & \textbf{干扰源数} & \textbf{清除率} & \textbf{平均定位清除时间 / s} & \textbf{运行耗时 / s} \\
+\midrule
+R96U-JR3B-Q9A4-R627 & 10 & 100\% & 380.99 & 16.30 \\
+JFWB-B2J9-NUVE-PYU3 & 11 & 100\% & 405.69 & 15.90 \\
+SAEG-8QF8-3ZWP-E948 & 16 & 100\% & 289.92 & 20.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{问题四：定向干扰源可见性与补盲协同清除}
+站点 $s$ 能测得定向源 $x$（朝向 $u$）的充要条件为：
+\begin{equation}
+s \text{ 可见} \iff \|s - x\| \le 1000\text{ m} \quad \text{且} \quad (s - x)\cdot u \ge 0
+\end{equation}
+由凸集分离定理证明：任意朝向保底检出的充要条件为 $x \in \operatorname{conv}(V(x))$。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig8_directional_source_geometry.png}
+\caption{保底检出成立与两类失效的几何对照}
+\end{figure}
+
+求解域外补盲外圈条件：
+\begin{equation}
+R \cos\frac{\pi}{n} \ge 1800\text{ m}, \quad \sqrt{R^2 + 1800^2 - 2 \cdot 1800 R \cos\frac{\pi}{n}} \le 1000\text{ m}
+\end{equation}
+选取 $R = 1860\text{ m}, n = 14$，使保底检出率达到 100.00\%。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig9_outer_ring_conditions.png}
+\caption{补盲外圈两条必要条件（最不利边界源与可行带状区间）}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig10_ray_approach_geometry.png}
+\caption{沿示向度射线逼近的三阶段与源附近偏差几何}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig11_q4_patrol_route_and_convex_hull.png}
+\caption{问题四布点与巡游路线以及判据 A 凸包示意}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{问题四官方模拟器正式测试结果}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{测试案例编码} & \textbf{干扰源数} & \textbf{清除率} & \textbf{平均定位清除时间 / s} & \textbf{运行耗时 / s} \\
+\midrule
+3VUQ-CTMC-TVT8-XB4R & 11 & 100\% & 619.92 & 16.70 \\
+3JHF-PH7R-P34W-VT27 & 16 & 100\% & 291.84 & 16.20 \\
+4WPC-W8AG-KRFT-PQ2T & 13 & 100\% & 528.04 & 14.60 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{模型评价与学术推广}
+\begin{enumerate}
+    \item \textbf{闭式充要判据优势}：以半平面交、旋转卡壳直径与最小外接圆为基石，判据可严谨证明，落地为零试探动作。
+    \item \textbf{过度保守性的贝叶斯概率拓展}：传统 Min-Max 取极端误差端点过于保守。后续可引入示向度高斯误差先验 $p(\theta \mid \theta_0) \sim \mathcal{N}(\theta_0, \sigma^2)$，构建贝叶斯后验概率置信网格，实现期望代价最小化。
+    \item \textbf{机器人动力学平滑}：引入 Dubins 连续曲率航迹平滑算法，计入角加速度约束，进一步压缩真实机动耗时。
+\end{enumerate}
+
+\begin{thebibliography}{99}
+\bibitem{ref1} 徐济仁, 薛磊. 最小二乘方法用于多站测向定位的算法[J]. 电波科学学报, 2001, 16(2): 227-230.
+\bibitem{ref2} 徐济仁. 测向定位中若干问题的探讨[J]. 无线电工程, 2001(S1): 122-123.
+\bibitem{ref3} 陈家松, 徐济仁, 江从俊. 多测向站测向定位的递推模型与算法[J]. 现代雷达, 2008, 30(6): 56-59.
+\bibitem{ref4} 丁杰. 基于中垂面分割的多站DOA/TDOA定位算法[J]. IEICE Transactions on Information and Systems, 2012, E95-D(5): 1336-1343.
+\bibitem{ref5} 柏如龙, 霍立寰, 陈兵. 基于多时差的干扰源定位虚假点消除方法[J]. 无线电通信技术, 2022, 48(2): 223-228.
+\bibitem{ref6} 王文宇, 朱磊, 姚昌华. 机器学习助力基于优化理论的TDOA无源定位[J]. 信息与控制, 2022, 51(4): 385-396.
+\bibitem{ref7} 李蜀丰, 徐永绍, 刘秉政. 基于改进MUSIC的声源定位方法[J]. 电子测量与仪器学报, 2021, 35(8): 212-219.
+\bibitem{ref8} 基于任意麦克风阵列的声源二维DOA估计算法研究[J]. 通信学报, 2005, 26(8): 110-114.
+\bibitem{ref9} 卢卓, 吴启晖, 周福辉. 有人机/无人机智能协同目标搜索和轨迹规划算法[J]. 通信学报, 2024, 45(1): 1-12.
+\bibitem{ref10} 孙伟昌, 罗志浩, 石建迈, 刘忠. 无人机覆盖路径规划方法综述[J]. 控制理论与应用, 2026, 43(4): 709-727.
+\bibitem{ref11} 祁晓明, 魏瑞轩, 沈东, 王树磊. 面向目标不确定的多无人机鲁棒协同搜索[J]. 系统工程与电子技术, 2013, 35(11): 2318-2324.
+\bibitem{ref12} 基于蚁群决策与滚动控制的多目的地航迹规划[J]. 电光与控制, 2023, 30(8): 1-6.
+\end{thebibliography}
+
+\end{document}
